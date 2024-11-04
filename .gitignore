@@ -25,3 +25,5 @@ Cargo.lock
 /target
 
 /tests
+
+plan.md
