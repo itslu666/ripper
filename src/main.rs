@@ -1,10 +1,13 @@
 use clap::{Arg, Command};
+use std::fs;
+use std::env;
+use std::path::PathBuf;
 
 fn dig() {
     println!("dig");
 }
 
-fn resurrect(items: &[String]) {
+fn revive(items: &[String]) {
     for item in items {
         println!("reviving: {}", item);
     }
@@ -16,6 +19,16 @@ fn delete_file(items: &[String]) {
     } else {
         for item in items {
             println!("deleting: {}", item);
+
+            let home_dir = env::var("HOME").expect("Home directory not found.");
+            let mut trash = PathBuf::from(home_dir);
+            trash.push(".local/share/Trash/files");
+            trash.push(item);
+
+            match fs::rename(item, &trash) {
+                Ok(_) => println!("Deleted {}", item),
+                Err(e) => eprintln!("Failed to delete {}: {}", item, e),
+            }
         }
     }
 }
@@ -81,7 +94,7 @@ fn main() {
     // Check if revive flag is set and get the associated items
     if let Some(items) = matches.get_many::<String>("revive") {
         let items_vec: Vec<String> = items.map(|s| s.to_string()).collect();
-        resurrect(&items_vec);
+        revive(&items_vec);
     }
 
     // Finally, delete the collected items
