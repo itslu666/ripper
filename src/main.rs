@@ -4,12 +4,20 @@ fn dig() {
     println!("dig");
 }
 
-fn resurrect() {
-    println!("resurrect");
+fn resurrect(items: &[String]) {
+    for item in items {
+        println!("reviving: {}", item);
+    }
 }
 
-fn delete_file() {
-    println!("delete files");
+fn delete_file(items: &[String]) {
+    if items.is_empty() {
+        println!("No files specified to delete.");
+    } else {
+        for item in items {
+            println!("deleting: {}", item);
+        }
+    }
 }
 
 fn main() {
@@ -24,27 +32,60 @@ fn main() {
                 .action(clap::ArgAction::SetTrue),
         )
         .arg(
-            Arg::new("resurrect")
+            Arg::new("revive")
                 .short('r')
-                .long("resurrect")
-                .help("Resurrect (Recover) item from trash bin")
-                .action(clap::ArgAction::SetTrue),
+                .long("revive")
+                .help("Revive (Recover) items from trash bin")
+                .num_args(1..)
+                .action(clap::ArgAction::Set),
+        )
+        .arg(
+            Arg::new("bury")
+                .short('b')
+                .long("bury")
+                .help("Bury (delete) an item")
+                .num_args(1..)
+                .action(clap::ArgAction::Set),
+        )
+        .arg(
+            Arg::new("files")
+                .help("Files to delete")
+                .num_args(0..)
+                .index(1), // Set the first positional argument to index 1
         )
         .get_matches();
 
-    // delete files if no flags are set
-    if !matches.get_flag("dig") && !matches.get_flag("resurrect") {
-        delete_file();
+    let mut items_to_delete = Vec::new();
+
+    // Check for files in the "files" argument
+    if let Some(files) = matches.get_many::<String>("files") {
+        items_to_delete.extend(files.map(|s| s.to_string()));
+    }
+
+    // Check if bury flag is set and get the associated items
+    if let Some(items) = matches.get_many::<String>("bury") {
+        items_to_delete.extend(items.map(|s| s.to_string()));
+    }
+
+    // If no flags are set, delete files
+    if !matches.get_flag("dig") && !matches.contains_id("revive") && items_to_delete.is_empty() {
+        delete_file(&[]);
         return; // End function after files deleted
     }
 
-    // check if dig flag is set
+    // Check if dig flag is set
     if matches.get_flag("dig") {
         dig();
     }
 
-    // check if resurrect flag is set
-    if matches.get_flag("resurrect") {
-        resurrect();
+    // Check if revive flag is set and get the associated items
+    if let Some(items) = matches.get_many::<String>("revive") {
+        let items_vec: Vec<String> = items.map(|s| s.to_string()).collect();
+        resurrect(&items_vec);
+    }
+
+    // Finally, delete the collected items
+    if !items_to_delete.is_empty() {
+        delete_file(&items_to_delete);
     }
 }
