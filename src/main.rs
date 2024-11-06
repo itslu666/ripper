@@ -1,10 +1,17 @@
 use clap::{Arg, Command};
-use std::fs;
 use std::env;
+use std::fs;
 use std::path::PathBuf;
 
 fn dig() {
-    println!("dig");
+    let home_dir = env::var("HOME").expect("Home directory not found.");
+    let mut trash = PathBuf::from(home_dir);
+    trash.push(".local/share/Trash/files");
+
+    let paths = fs::read_dir(trash).unwrap();
+    for path in paths {
+        println!("Name: {}", path.unwrap().path().display())
+    }
 }
 
 fn revive(items: &[String]) {
