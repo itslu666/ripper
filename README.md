@@ -9,8 +9,6 @@ Just another cli tool to manage Linux trash bin
 - [ ] Recover specific file/directory
 - [ ] Recover specific file/directory into new location
 - [x] List **all** trashed files/directories
-- [ ] List **only** trashed **files**
-- [ ] List **only** trashed **directories**
 - [ ] Set 12h/24h format
 
 # Installation
