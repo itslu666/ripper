@@ -1,5 +1,3 @@
-use chrono::Date;
-use chrono::{DateTime, Utc};
 use clap::{Arg, Command};
 use std::env;
 use std::fs;
@@ -13,6 +11,9 @@ fn get_time(path: &PathBuf) -> Option<SystemTime> {
 }
 
 fn dig() {
+    use std::{env, fs, path::PathBuf, time::SystemTime};
+    use chrono::{DateTime, Utc};
+    
     let home_dir = env::var("HOME").expect("Home directory not found.");
     let mut trash = PathBuf::from(home_dir);
     trash.push(".local/share/Trash/files");
@@ -27,22 +28,29 @@ fn dig() {
 
     let mut latest_file: Option<(PathBuf, SystemTime)> = None;
     let mut current_file: Option<(PathBuf, SystemTime)> = None;
-    let mut all_files: Vec<Option<(PathBuf, SystemTime)>> = Vec::new();
+    let mut all_files: Vec<(PathBuf, SystemTime)> = Vec::new();
+    let mut max_filename_length = 0;
 
     for entry in paths {
         if let Ok(entry) = entry {
             let path = entry.path();
 
             if let Some(modified_time) = get_time(&path) {
+                let file_name_length = path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .len();
+                if file_name_length > max_filename_length {
+                    max_filename_length = file_name_length;
+                }
+
                 if latest_file.is_none() || modified_time > latest_file.as_ref().unwrap().1 {
                     latest_file = Some((path.clone(), modified_time));
                 } else {
                     current_file = Some((path.clone(), modified_time));
-
-                    if let Some((current_path, _)) = current_file.as_ref() {
-                        if let Some(_file_name) = current_path.file_name() {
-                            all_files.push(Some((current_path.clone(), modified_time)));
-                        }
+                    if let Some((current_path, time)) = current_file {
+                        all_files.push((current_path.clone(), time));
                     }
                 }
             }
@@ -53,27 +61,27 @@ fn dig() {
         let datetime = DateTime::<Utc>::from(modified_time);
 
         println!(
-            "Most Recent: {}\t{}\n",
+            "Most Recent:\n{:<width$} {}",
             latest_path
                 .file_name()
                 .unwrap_or_default()
                 .to_string_lossy(),
-            datetime.format("%Y-%m-%d %H:%M:%S")
+            datetime.format("%Y-%m-%d %H:%M:%S"),
+            width = max_filename_length + 2
         );
 
-        for file in all_files {
-            if let Some((path, time)) = file {
-                let file_time = DateTime::<Utc>::from(time);
-
-                println!(
-                    "{}\t{}",
-                    path.file_name().unwrap_or_default().to_string_lossy(),
-                    file_time.format("%Y-%m-%d %H:%M:%S")
-                );
-            }
+        println!("\nAll Files:");
+        for (path, time) in all_files {
+            let file_time = DateTime::<Utc>::from(time);
+            println!(
+                "{:<width$} {}",
+                path.file_name().unwrap_or_default().to_string_lossy(),
+                file_time.format("%Y-%m-%d %H:%M:%S"),
+                width = max_filename_length + 2
+            );
         }
     } else {
-        println!("No files found.")
+        println!("No files found.");
     }
 }
 
