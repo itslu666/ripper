@@ -89,9 +89,18 @@ fn revive(items: &Vec<String>) {
 
     for item in items {
         let filepath = trash.join(item);
+        let destination = PathBuf::from(".").join(item);
+        if destination.exists() {
+            eprintln!("You are in a directory with a file named {}", item);
+            continue;
+        }
 
         if filepath.exists() {
-            println!("reviving: {:?}", filepath);
+            println!("reviving: {}", item);
+            match fs::rename(filepath, &destination) {
+                Ok(_) => println!("Revived {}", item),
+                Err(e) => eprintln!("Failed to revive {}: {}", item, e),
+            }
         } else {
             println!("File not in trash directory.")
         }
