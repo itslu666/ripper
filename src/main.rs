@@ -1,3 +1,4 @@
+use clap::builder::Str;
 use clap::{Arg, Command};
 use std::env;
 use std::fs;
@@ -11,9 +12,9 @@ fn get_time(path: &PathBuf) -> Option<SystemTime> {
 }
 
 fn dig() {
-    use std::{env, fs, path::PathBuf, time::SystemTime};
     use chrono::{DateTime, Utc};
-    
+    use std::{env, fs, path::PathBuf, time::SystemTime};
+
     let home_dir = env::var("HOME").expect("Home directory not found.");
     let mut trash = PathBuf::from(home_dir);
     trash.push(".local/share/Trash/files");
@@ -36,11 +37,7 @@ fn dig() {
             let path = entry.path();
 
             if let Some(modified_time) = get_time(&path) {
-                let file_name_length = path
-                    .file_name()
-                    .unwrap_or_default()
-                    .to_string_lossy()
-                    .len();
+                let file_name_length = path.file_name().unwrap_or_default().to_string_lossy().len();
                 if file_name_length > max_filename_length {
                     max_filename_length = file_name_length;
                 }
@@ -85,9 +82,19 @@ fn dig() {
     }
 }
 
-fn revive(items: &[String]) {
+fn revive(items: &Vec<String>) {
+    let home_dir = env::var("HOME").expect("Home directory not found.");
+    let mut trash = PathBuf::from(home_dir);
+    trash.push(".local/share/Trash/files");
+
     for item in items {
-        println!("reviving: {}", item);
+        let filepath = trash.join(item);
+
+        if filepath.exists() {
+            println!("reviving: {:?}", filepath);
+        } else {
+            println!("File not in trash directory.")
+        }
     }
 }
 
