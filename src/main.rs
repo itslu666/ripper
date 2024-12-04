@@ -67,6 +67,8 @@ fn dig() {
             width = max_filename_length + 2
         );
 
+        all_files.sort_by(|a, b| b.1.cmp(&a.1));
+
         println!("\nAll Files:");
         for (path, time) in all_files {
             let file_time = DateTime::<Utc>::from(time);
