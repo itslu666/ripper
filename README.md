@@ -5,7 +5,7 @@ Just another cli tool to manage Linux trash bin written in Rust
 # Features/TODO
 
 - [x] Delete file/directory (to trash bin)
-- [ ] Recover last file/directory
+- [x] Recover last file/directory
 - [x] Recover specific file/directory
 - [x] List **all** trashed files/directories
 

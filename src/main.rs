@@ -1,5 +1,5 @@
-use clap::builder::Str;
 use clap::{Arg, Command};
+use std::collections::btree_map::Entry;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -89,25 +89,62 @@ fn revive(items: &Vec<String>) {
     let mut trash = PathBuf::from(home_dir);
     trash.push(".local/share/Trash/files");
 
-    for item in items {
-        let filepath = trash.join(item);
-        let destination = PathBuf::from(".").join(item);
-        if destination.exists() {
-            eprintln!("You are in a directory with a file named {}", item);
-            continue;
+    // Wenn keine Dateien angegeben wurden, wähle die letzte Datei
+    if items.is_empty() {
+        let paths = fs::read_dir(&trash).expect("Failed to read trash directory.");
+        let mut latest_file: Option<(PathBuf, SystemTime)> = None;
+
+        for entry in paths {
+            if let Ok(entry) = entry {
+                let path = entry.path();
+                if let Some(modified_time) = get_time(&path) {
+                    if latest_file.is_none() || modified_time > latest_file.as_ref().unwrap().1 {
+                        latest_file = Some((path.clone(), modified_time));
+                    }
+                }
+            }
         }
 
-        if filepath.exists() {
-            println!("reviving: {}", item);
-            match fs::rename(filepath, &destination) {
-                Ok(_) => println!("Revived {}", item),
-                Err(e) => eprintln!("Failed to revive {}: {}", item, e),
+        if let Some((latest_path, _)) = latest_file {
+            let destination = PathBuf::from(".").join(latest_path.file_name().unwrap());
+            if destination.exists() {
+                eprintln!(
+                    "You are in a directory with a file named {}",
+                    latest_path.file_name().unwrap().to_string_lossy()
+                );
+                return;
+            }
+
+            println!("Reviving: {}", latest_path.file_name().unwrap().to_string_lossy());
+            match fs::rename(latest_path, &destination) {
+                Ok(_) => println!("Successfully revived the last file."),
+                Err(e) => eprintln!("Failed to revive file: {}", e),
             }
         } else {
-            println!("File not in trash directory.")
+            println!("No files found in trash.");
+        }
+    } else {
+        for item in items {
+            let filepath = trash.join(item);
+            let destination = PathBuf::from(".").join(item);
+            if destination.exists() {
+                eprintln!("You are in a directory with a file named {}", item);
+                continue;
+            }
+
+            if filepath.exists() {
+                println!("Reviving: {}", item);
+                match fs::rename(filepath, &destination) {
+                    Ok(_) => println!("Revived {}", item),
+                    Err(e) => eprintln!("Failed to revive {}: {}", item, e),
+                }
+            } else {
+                println!("File not in trash directory.");
+            }
         }
     }
 }
+
 
 fn delete_file(items: &[String]) {
     if items.is_empty() {
@@ -145,7 +182,7 @@ fn main() {
                 .short('r')
                 .long("revive")
                 .help("Revive (Recover) items from trash bin")
-                .num_args(1..)
+                .num_args(0..)
                 .action(clap::ArgAction::Set),
         )
         .arg(
@@ -190,7 +227,11 @@ fn main() {
     // Check if revive flag is set and get the associated items
     if let Some(items) = matches.get_many::<String>("revive") {
         let items_vec: Vec<String> = items.map(|s| s.to_string()).collect();
-        revive(&items_vec);
+        if items_vec.is_empty() {
+            revive(&Vec::new());
+        } else {
+            revive(&items_vec);
+        }
     }
 
     // Finally, delete the collected items
