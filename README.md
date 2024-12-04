@@ -31,3 +31,4 @@ Option | Effect
 -V, --version | Print version
 
 You can also delete files without the `-b, --bury` tag.
+You can also recover the latest file without the naming a file after `-r, --revive`.
